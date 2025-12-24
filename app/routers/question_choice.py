@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -9,6 +9,8 @@ from app.schemas.question_choice import (
     QuestionChoiceUpdate,
     QuestionChoiceResponse,
 )
+from app.core.error_codes import RESOURCE_NOT_FOUND
+from app.core.exception import AppException
 
 router = APIRouter(prefix="/choices", tags=["QuestionChoices"])
 
@@ -24,12 +26,12 @@ def get_choices_by_question(question_id: int, db: Session = Depends(get_db)):
 def update_question_choice(choice_id: int, request: QuestionChoiceUpdate, db: Session = Depends(get_db)):
     updated = crud.update_choice(db, choice_id, request)
     if not updated:
-        raise HTTPException(status_code=404, detail="Choice not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"choice_id": choice_id})
     return updated
 
 @router.delete("/{choice_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_question_choice(choice_id: int, db: Session = Depends(get_db)):
     result = crud.delete_choice(db, choice_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Choice not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"choice_id": choice_id})
     return {"ok": True}

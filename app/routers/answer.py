@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+# app/routers/answers.py
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from typing import List
 
 from app.db.deps import get_db
 from app.crud import answer as crud
 from app.schemas.answer import AnswerCreate, AnswerResponse
+from app.core.error_codes import RESOURCE_NOT_FOUND, STATE_CONFLICT
+from app.core.exception import AppException
 
 router = APIRouter(prefix="/answers", tags=["Answers"])
 
@@ -14,11 +17,14 @@ def create_answer(request: AnswerCreate, db: Session = Depends(get_db)):
 
 @router.get("/test-results/{test_result_id}", response_model=List[AnswerResponse])
 def get_answers_by_test_result(test_result_id: int, db: Session = Depends(get_db)):
-    return crud.get_answers_by_test_result(db, test_result_id)
+    answers = crud.get_answers_by_test_result(db, test_result_id)
+    if not answers:
+        raise AppException(**RESOURCE_NOT_FOUND, details={"test_result_id": test_result_id})
+    return answers
 
 @router.delete("/{answer_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_answer(answer_id: int, db: Session = Depends(get_db)):
     result = crud.delete_answer(db, answer_id)
     if not result:
-        raise HTTPException(status_code=404, detail="Answer not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"answer_id": answer_id})
     return {"ok": True}

@@ -1,5 +1,4 @@
-# app/routers/questions.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.db.deps import get_db
@@ -10,6 +9,8 @@ from app.schemas.questions import (
     QuestionUpdate,
     QuestionResponse,
 )
+from app.core.error_codes import RESOURCE_NOT_FOUND
+from app.core.exception import AppException
 
 router = APIRouter(prefix="/questions", tags=["Questions"])
 
@@ -26,7 +27,7 @@ def create_question(
 ):
     test = db.query(Test).filter(Test.test_id == test_id).first()
     if not test:
-        raise HTTPException(status_code=404, detail="Test not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"test_id": test_id})
 
     question = Question(
         test_id=test_id,
@@ -65,7 +66,7 @@ def update_question(
 ):
     question = db.query(Question).filter(Question.question_id == id).first()
     if not question:
-        raise HTTPException(status_code=404, detail="Question not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"question_id": id})
 
     question.content = request.content
     db.commit()
@@ -83,7 +84,7 @@ def delete_question(
 ):
     question = db.query(Question).filter(Question.question_id == id).first()
     if not question:
-        raise HTTPException(status_code=404, detail="Question not found")
+        raise AppException(**RESOURCE_NOT_FOUND, details={"question_id": id})
 
     db.delete(question)
     db.commit()
